@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Student To-Do List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #ffcc00, #ffdd55);
+            color: black;
+        }
+        .main-container {
+            display: flex;
+            gap: 20px;
+            width: 80%;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        
+        .modal {
+            background: black;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid yellow;
+            width: 80%;
+            max-width: 500px;
+            animation: modalPop 0.3s ease-out;
+        }
+        
+        @keyframes modalPop {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        .filter-section button {
+            background: black;
+            color: yellow;
+            border: 1px solid yellow;
+        }
+        
+        .filter-section button.active {
+            background: yellow;
+            color: black;
+        }
+        
+        .container {
+            background: black;
+            color: yellow;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            flex: 1;
+            transition: transform 0.5s, opacity 0.5s;
+        }
+        .hidden {
+            opacity: 0;
+            transform: scale(0.9);
+            pointer-events: none;
+        }
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid yellow;
+            background: black;
+            color: yellow;
+        }
+        button {
+            background: yellow;
+            color: black;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #e6b800;
+            transform: scale(1.05);
+        }
+        .task-container, .event-container, .pomodoro-container {
+            text-align: left;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: yellow;
+            color: black;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 5px 0;
+            transition: transform 0.2s, background 0.3s ease;
+            cursor: grab;
+        }
+        li:hover {
+            transform: scale(1.05);
+            background: #e6b800;
+        }
+        .progress-bar {
+            width: 100%;
+            background: yellow;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .progress-bar-fill {
+            height: 10px;
+            background: black;
+            width: 0%;
+            transition: width 0.5s;
+        }
+        
+        .motivation-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: black;
+            color: yellow;
+            padding: 15px;
+            text-align: center;
+            z-index: 1000;
+            animation: slideDown 0.8s ease-out;
+        }
+
+        .motivation-text {
+            font-size: 1.8em;
+            font-weight: bold;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -moz-background-clip: text;
+            color: transparent;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            animation: pulse 2s infinite;
+        }
+
+        .notification-badge {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ff4444;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transform: translateX(200%);
+            animation: slideIn 0.5s forwards;
+            z-index: 1001;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes slideIn {
+            to { transform: translateX(0); }
+        }
+
+        .main-container {
+            margin-top: 80px;
+        }
+        .priority-high { border-left: 4px solid #ff4444; }
+        .priority-medium { border-left: 4px solid #ffbb33; }
+        .priority-low { border-left: 4px solid #00C851; }
+
+        .category-tag {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            background: black;
+            color: yellow;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .filter-section {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .stats-section {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+        }
+
+        .break-timer {
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="motivation-header">
+        <div class="motivation-text">✨ Slay Your Tasks, Main Character Energy! 💫</div>
+    </div>
+    <div class="main-container">
+        <div class="container">
+            <h2>Task List</h2>
+            <div class="input-section">
+                <input type="text" id="taskInput" placeholder="New task...">
+                <input type="date" id="dueDate">
+                <select id="category">
+                    <option value="work">Work</option>
+                    <option value="personal">Personal</option>
+                    <option value="shopping">Shopping</option>
+                    <option value="fitness">Fitness</option>
+                    <option value="education">Education</option>
+                    <option value="finance">Finance</option>
+                    <option value="travel">Travel</option>
+                    <option value="health">Health</option>
+                </select>
+                <select id="priority">
+                    <option value="low">Low Priority</option>
+                    <option value="medium">Medium Priority</option>
+                    <option value="high">High Priority</option>
+                </select>
+                <button onclick="addTask()">Add Task</button>
+            </div>
+            <div class="filter-section">
+                <button onclick="filterTasks('all')">All</button>
+                <button onclick="filterTasks('active')">Active</button>
+                <button onclick="filterTasks('completed')">Completed</button>
+            </div>
+            <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+            <div class="stats-section">
+                <p>Total Tasks: <span id="totalTasks">0</span></p>
+                <p>Completed: <span id="completedTasks">0</span></p>
+            </div>
+            <div class="task-container">
+                <ul id="taskList"></ul>
+                <h3>Completed Tasks</h3>
+                <ul id="completedList"></ul>
+            </div>
+        </div>
+        <div class="container event-container" id="eventContainer">
+            <h2>Upcoming Events</h2>
+            <div class="input-section">
+                <input type="text" id="eventInput" placeholder="New event...">
+                <input type="datetime-local" id="eventDateTime">
+                <button onclick="addEvent()">Add Event</button>
+            </div>
+            <ul id="eventList"></ul>
+        </div>
+        <div class="container pomodoro-container">
+            <h2>Pomodoro Timer</h2>
+            <p id="timer">25:00</p>
+            <div class="timer-controls">
+                <button onclick="startPomodoro()">Start</button>
+                <button onclick="pausePomodoro()">Pause</button>
+                <button onclick="resetPomodoro()">Reset</button>
+            </div>
+            <div class="break-timer">
+                <p>Break time: <span id="breakTimer">5:00</span></p>
+                <select id="timerType">
+                    <option value="25">25 min work</option>
+                    <option value="50">50 min work</option>
+                    <option value="5">5 min break</option>
+                    <option value="15">15 min break</option>
+                </select>
+            </div>
+        </div>
+    </div><script>
+        let tasks = [];
+        let events = [];
+        let pomodoroInterval;
+        let isPaused = false;
+        let timeLeft = 1500;
+    
+       
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            const date = document.getElementById('dueDate');
+            const category = document.getElementById('category');
+            const priority = document.getElementById('priority');
+            
+            
+            if (!input.value.trim()) {
+                showNotification('⚠️ Please enter a task description!');
+                input.focus();
+                return;
+            }
+        
+            
+            if (!date.value) {
+                showNotification('⚠️ Please select a due date!');
+                date.focus();
+                return;
+            }
+        
+            
+            const selectedDate = new Date(date.value);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (selectedDate < today) {
+                showNotification('⚠️ Due date cannot be in the past!');
+                date.focus();
+                return;
+            }
+        
+            const task = {
+                id: Date.now(),
+                text: input.value.trim(),
+                dueDate: date.value,
+                category: category.value,
+                priority: priority.value,
+                completed: false,
+                createdAt: new Date().toLocaleString()
+            };
+            
+            tasks.push(task);
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            renderTasks();
+            updateProgress();
+            showNotification('✨ New task added successfully! You got this! 💪');
+            
+            input.value = '';
+            date.value = '';
+        }
+        
+    
+        function renderTasks() {
+            const taskList = document.getElementById('taskList');
+            const completedList = document.getElementById('completedList');
+            
+            taskList.innerHTML = '';
+            completedList.innerHTML = '';
+            
+            tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.className = `priority-${task.priority}`;
+                li.innerHTML = `
+                    <span>${task.text}</span>
+                    <div class="task-actions">
+                        <span class="category-tag">${task.category}</span>
+                        <button onclick="toggleTask(${task.id})">${task.completed ? '↩️' : '✓'}</button>
+                        <button onclick="deleteTask(${task.id})">🗑️</button>
+                    </div>
+                `;
+                
+                if (task.completed) {
+                    completedList.appendChild(li);
+                } else {
+                    taskList.appendChild(li);
+                }
+            });
+            
+            updateStats();
+        }
+    
+        function toggleTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+                renderTasks();
+                updateProgress();
+            }
+        }
+    
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            renderTasks();
+            updateProgress();
+        }
+    
+        function updateProgress() {
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.completed).length;
+            const percentage = total ? (completed / total) * 100 : 0;
+            document.querySelector('.progress-bar-fill').style.width = `${percentage}%`;
+        }
+    
+        function updateStats() {
+            document.getElementById('totalTasks').textContent = tasks.length;
+            document.getElementById('completedTasks').textContent = tasks.filter(t => t.completed).length;
+        }
+        
+function filterTasks(filter) {
+    
+    document.querySelectorAll('.filter-section button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    
+    const clickedButton = document.querySelector(`.filter-section button[onclick="filterTasks('${filter}')"]`);
+    if (clickedButton) {
+        clickedButton.classList.add('active');
+    }
+
+    const taskList = document.getElementById('taskList');
+    const completedList = document.getElementById('completedList');
+    
+    taskList.innerHTML = '';
+    completedList.innerHTML = '';
+    
+    tasks.forEach(task => {
+        if ((filter === 'all') ||
+            (filter === 'active' && !task.completed) ||
+            (filter === 'completed' && task.completed)) {
+            
+            const li = document.createElement('li');
+            li.className = `priority-${task.priority}`;
+            li.innerHTML = `
+                <span>${task.text}</span>
+                <div class="task-actions">
+                    <span class="category-tag">${task.category}</span>
+                    <button onclick="toggleTask(${task.id})">${task.completed ? '↩️' : '✓'}</button>
+                    <button onclick="deleteTask(${task.id})">🗑️</button>
+                </div>
+            `;
+            
+            if (task.completed) {
+                completedList.appendChild(li);
+            } else {
+                taskList.appendChild(li);
+            }
+        }
+    });
+    
+    updateStats();
+    updateProgress();
+}
+    
+        
+        function showTaskList(filter) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.style.display = 'flex';
+            
+            const content = document.createElement('div');
+            content.className = 'modal';
+            
+            const title = document.createElement('h2');
+            title.textContent = `${filter.charAt(0).toUpperCase() + filter.slice(1)} Tasks`;
+            title.style.color = 'yellow';
+            
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.placeholder = 'Search tasks...';
+            searchInput.style.marginBottom = '15px';
+            
+            const tasksList = document.createElement('div');
+            tasksList.style.maxHeight = '60vh';
+            tasksList.style.overflowY = 'auto';
+            tasksList.style.padding = '10px';
+            
+            const sortSelect = document.createElement('select');
+            sortSelect.innerHTML = `
+                <option value="date">Sort by Date</option>
+                <option value="priority">Sort by Priority</option>
+                <option value="category">Sort by Category</option>
+            `;
+            sortSelect.style.marginBottom = '15px';
+            
+            function filterModalTasks(searchText) {
+                const filteredTasks = tasks.filter(task => 
+                    task.text.toLowerCase().includes(searchText.toLowerCase()) &&
+                    ((filter === 'all') ||
+                     (filter === 'active' && !task.completed) ||
+                     (filter === 'completed' && task.completed))
+                );
+                renderModalTasks(filteredTasks);
+            }
+            
+            searchInput.oninput = (e) => filterModalTasks(e.target.value);
+            
+            function renderModalTasks(tasksToShow) {
+                tasksList.innerHTML = '';
+                tasksToShow.forEach(task => {
+                    const taskItem = document.createElement('div');
+                    taskItem.style.margin = '10px 0';
+                    taskItem.style.padding = '15px';
+                    taskItem.style.background = 'yellow';
+                    taskItem.style.color = 'black';
+                    taskItem.style.borderRadius = '5px';
+                    taskItem.className = `priority-${task.priority}`;
+                    
+                    taskItem.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: bold;">${task.text}</span>
+                            <span class="category-tag">${task.category}</span>
+                        </div>
+                        <div style="font-size: 0.9em; margin-top: 8px;">
+                            <div>Due: ${task.dueDate || 'No date set'}</div>
+                            <div>Priority: ${task.priority}</div>
+                            <div>Created: ${task.createdAt}</div>
+                        </div>
+                        <div style="margin-top: 10px; display: flex; gap: 5px;">
+                            <button onclick="toggleTask(${task.id})" style="font-size: 0.8em;">
+                                ${task.completed ? 'Mark Incomplete' : 'Mark Complete'}
+                            </button>
+                            <button onclick="deleteTask(${task.id})" style="font-size: 0.8em;">Delete</button>
+                        </div>
+                    `;
+                    tasksList.appendChild(taskItem);
+                });
+            }
+            
+            function sortModalTasks(sortBy) {
+                const sortedTasks = [...tasks].sort((a, b) => {
+                    switch(sortBy) {
+                        case 'date':
+                            return new Date(a.dueDate) - new Date(b.dueDate);
+                        case 'priority':
+                            const priorityOrder = {high: 1, medium: 2, low: 3};
+                            return priorityOrder[a.priority] - priorityOrder[b.priority];
+                        case 'category':
+                            return a.category.localeCompare(b.category);
+                        default:
+                            return 0;
+                    }
+                }).filter(task => 
+                    (filter === 'all') ||
+                    (filter === 'active' && !task.completed) ||
+                    (filter === 'completed' && task.completed)
+                );
+                renderModalTasks(sortedTasks);
+            }
+            
+            sortSelect.onchange = (e) => sortModalTasks(e.target.value);
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = 'Close';
+            closeBtn.onclick = () => modal.remove();
+            closeBtn.style.marginTop = '15px';
+            
+            content.appendChild(title);
+            content.appendChild(searchInput);
+            content.appendChild(sortSelect);
+            content.appendChild(tasksList);
+            content.appendChild(closeBtn);
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+            
+            const filteredTasks = tasks.filter(task => 
+                (filter === 'all') ||
+                (filter === 'active' && !task.completed) ||
+                (filter === 'completed' && task.completed)
+            );
+            renderModalTasks(filteredTasks);
+        }
+    
+        
+        function addEvent() {
+            const input = document.getElementById('eventInput');
+            const dateTime = document.getElementById('eventDateTime');
+            
+            
+            if (!input.value.trim()) {
+                showNotification('⚠️ Please enter an event description!');
+                input.focus();
+                return;
+            }
+        
+            
+            if (!dateTime.value) {
+                showNotification('⚠️ Please select date and time!');
+                dateTime.focus();
+                return;
+            }
+        
+            
+            const selectedDateTime = new Date(dateTime.value);
+            const now = new Date();
+            
+            if (selectedDateTime < now) {
+                showNotification('⚠️ Event time cannot be in the past!');
+                dateTime.focus();
+                return;
+            }
+        
+            events.push({
+                id: Date.now(),
+                text: input.value.trim(),
+                dateTime: selectedDateTime
+            });
+        
+            localStorage.setItem('events', JSON.stringify(events));
+            renderEvents();
+            showNotification('✨ New event added successfully!');
+            input.value = '';
+            dateTime.value = '';
+        }
+
+        function startPomodoro() {
+            const timerType = document.getElementById('timerType');
+            
+            
+            if (!timerType.value) {
+                showNotification('⚠️ Please select a timer duration!');
+                return;
+            }
+        
+            if (isPaused) {
+                isPaused = false;
+            } else {
+                timeLeft = parseInt(timerType.value) * 60;
+                
+                
+                if (timeLeft <= 0 || isNaN(timeLeft)) {
+                    showNotification('⚠️ Invalid timer duration!');
+                    return;
+                }
+            }
+            
+            if (!pomodoroInterval) {
+                pomodoroInterval = setInterval(() => {
+                    if (!isPaused) {
+                        let minutes = Math.floor(timeLeft / 60);
+                        let seconds = timeLeft % 60;
+                        document.getElementById("timer").textContent = 
+                            `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                        
+                        if (timeLeft <= 0) {
+                            clearInterval(pomodoroInterval);
+                            pomodoroInterval = null;
+                            showNotification('🎉 Timer completed! Take a break!');
+                            playTimerCompleteSound();
+                        } else {
+                            timeLeft--;
+                        }
+                    }
+                }, 1000);
+            }
+        }
+        
+        function playTimerCompleteSound() {
+            const audio = new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAUAAAbagAGBg0NDRQUGxsbIiIiKSkpMDAwNzc3Pj4+RUVFTU1NVFRUW1tbYmJiaWlpcHBwd3d3fn5+hYWFjIyMk5OTmpqaoaGhqKipr6+vtbW1vLy8w8PDysrK0dHR2NjY393d5OTk6+vr8vLy+fn5//8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAYAAAAAAAAABupVdpVlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+            audio.play();
+        }
+    
+        function renderEvents() {
+            const eventList = document.getElementById('eventList');
+            eventList.innerHTML = '';
+            
+            events.sort((a, b) => a.dateTime - b.dateTime)
+                .forEach(event => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${event.text}</span>
+                        <span>${event.dateTime.toLocaleString()}</span>
+                    `;
+                    eventList.appendChild(li);
+                });
+        }
+    
+        
+    
+        function pausePomodoro() {
+            isPaused = true;
+        }
+    
+        function resetPomodoro() {
+            clearInterval(pomodoroInterval);
+            pomodoroInterval = null;
+            timeLeft = document.getElementById('timerType').value * 60;
+            let minutes = Math.floor(timeLeft / 60);
+            document.getElementById("timer").textContent = `${minutes}:00`;
+            isPaused = false;
+        }
+    
+        // Notification Functions
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification-badge';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+    
+            setTimeout(() => {
+                notification.style.animation = 'slideIn 0.5s reverse';
+                setTimeout(() => notification.remove(), 500);
+            }, 5000);
+        }
+    
+        function checkDeadlines() {
+            const today = new Date();
+            tasks.forEach(task => {
+                if (!task.completed && task.dueDate) {
+                    const dueDate = new Date(task.dueDate);
+                    const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays === 1) {
+                        showNotification(`⚡ Deadline Tomorrow: ${task.text}`);
+                    } else if (diffDays === 0) {
+                        showNotification(`🔥 Due Today: ${task.text}`);
+                    } else if (diffDays < 0) {
+                        showNotification(`⚠️ Overdue: ${task.text}`);
+                    }
+                }
+            });
+        }
+    
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTasks = localStorage.getItem('tasks');
+            const savedEvents = localStorage.getItem('events');
+            
+            if (savedTasks) {
+                try {
+                    tasks = JSON.parse(savedTasks);
+                } catch (e) {
+                    console.error('Error loading tasks:', e);
+                    tasks = [];
+                    localStorage.removeItem('tasks');
+                }
+            }
+            
+            if (savedEvents) {
+                try {
+                    events = JSON.parse(savedEvents);
+                    events = events.map(event => ({
+                        ...event,
+                        dateTime: new Date(event.dateTime)
+                    }));
+                } catch (e) {
+                    console.error('Error loading events:', e);
+                    events = [];
+                    localStorage.removeItem('events');
+                }
+            }
+            
+            renderTasks();
+            renderEvents();
+            checkDeadlines();
+            setInterval(checkDeadlines, 3600000);
+        });
+    </script>
+</body>
+</html>
